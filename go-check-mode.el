@@ -43,9 +43,19 @@
                         (go-check-test-file-for (buffer-name)))))
     (go-check-jump-to-file other-file)))
 
+(defun go-check-f-flags-for (files)
+  (let ((files (if (listp files)
+                  files
+                (list files))))
+    (concat "-gocheck.f " "'" (mapconcat 'identity files "|") "'")))
+
 (defun go-check-single ()
   (interactive)
-  (message "go-check-single"))
+  (save-excursion
+    (go-beginning-of-defun)
+    (if (looking-at "func .* \\(Test.*\\)(.*)")
+        (go-check-compile (file-name-directory (buffer-file-name)) (go-check-f-flags-for (match-string 1)))
+      (message "No Test* found around point"))))
 
 (defun go-check-all ()
   (interactive)
@@ -79,6 +89,12 @@
   "Returns the command with which to run the specs"
   "go test")
 
+(defun go-check-runner-with-opts (&optional opts)
+  (let ((opts (if (listp opts)
+                 opts
+               (list opts))))
+    (concat (go-check-runner) " " (mapconcat 'identity opts " "))))
+
 (defun go-check-compile (a-file-or-dir &optional opts)
   "Runs a compile for the specified file or directory with the specified opts"
   (let ((map (make-sparse-keymap)))
@@ -87,8 +103,9 @@
                                                              (go-check-compile ,a-file-or-dir ,opts))))
     (global-set-key go-check-key-command-prefix map))
 
-  (let ((compilation-scroll-output t))
-    (compile (go-check-runner) 'go-check-compilation-mode)))
+  (go-check-run-from-directory (file-name-directory a-file-or-dir)
+                               (let ((compilation-scroll-output t))
+                                  (compile (go-check-runner-with-opts opts) 'go-check-compilation-mode))))
 
 (defmacro go-check-run-from-directory (directory body-form)
   "Peform body-form from within the specified directory"
