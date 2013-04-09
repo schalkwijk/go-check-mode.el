@@ -82,11 +82,18 @@
 (defun go-check-compile (a-file-or-dir &optional opts)
   "Runs a compile for the specified file or directory with the specified opts"
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "r") 'recompile)
+    (define-key map (kbd "r") `(lambda () (interactive)
+                                (go-check-run-from-directory (file-name-directory ,a-file-or-dir)
+                                                             (go-check-compile ,a-file-or-dir ,opts))))
     (global-set-key go-check-key-command-prefix map))
 
   (let ((compilation-scroll-output t))
     (compile (go-check-runner) 'go-check-compilation-mode)))
+
+(defmacro go-check-run-from-directory (directory body-form)
+  "Peform body-form from within the specified directory"
+  `(let ((default-directory ,directory))
+     ,body-form))
 
 (defvar go-check-compilation-mode-font-lock-keywords
   '((compilation--ensure-parse)
