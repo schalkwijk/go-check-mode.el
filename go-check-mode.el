@@ -31,10 +31,17 @@
   "Minor mode for Go testable files"
   :lighter "" :keymap `((,go-check-key-command-prefix . go-checkable-mode-keymap)))
 
+(defun go-check-tests-in-region (region-start region-end)
+  (let ((tests-in-region nil))
+    (save-excursion
+      (goto-char region-start)
+      (while (search-forward-regexp "func .* \\(Test.*\\)(.*)" region-end t)
+        (setq tests-in-region (cons (match-string 1) tests-in-region)))
+      (identity tests-in-region))))
 
 (defun go-check-current ()
   (interactive)
-  (message "go check current"))
+  (go-check-compile (buffer-file-name) (go-check-f-flag-for (go-check-tests-in-region (point-min) (point-max)))))
 
 (defun go-check-toggle-test-and-target ()
   (interactive)
@@ -43,7 +50,7 @@
                         (go-check-test-file-for (buffer-name)))))
     (go-check-jump-to-file other-file)))
 
-(defun go-check-f-flags-for (files)
+(defun go-check-f-flag-for (files)
   (let ((files (if (listp files)
                   files
                 (list files))))
@@ -54,7 +61,7 @@
   (save-excursion
     (go-beginning-of-defun)
     (if (looking-at "func .* \\(Test.*\\)(.*)")
-        (go-check-compile (file-name-directory (buffer-file-name)) (go-check-f-flags-for (match-string 1)))
+        (go-check-compile (file-name-directory (buffer-file-name)) (go-check-f-flag-for (match-string 1)))
       (message "No Test* found around point"))))
 
 (defun go-check-all ()
@@ -100,7 +107,7 @@
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "r") `(lambda () (interactive)
                                 (go-check-run-from-directory (file-name-directory ,a-file-or-dir)
-                                                             (go-check-compile ,a-file-or-dir ,opts))))
+                                                             (go-check-compile ,a-file-or-dir (quote ,opts)))))
     (global-set-key go-check-key-command-prefix map))
 
   (go-check-run-from-directory (file-name-directory a-file-or-dir)
