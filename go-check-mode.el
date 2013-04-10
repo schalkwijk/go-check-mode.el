@@ -39,9 +39,14 @@
         (setq tests-in-region (cons (match-string 1) tests-in-region)))
       (identity tests-in-region))))
 
+(defun go-check-run-tests-in-region (region-start region-end)
+  (let ((tests-in-region (go-check-tests-in-region region-start region-end)))
+    (if (= 0 (length tests-in-region)) (message "No tests found in region/file")
+      (go-check-compile (buffer-file-name) (go-check-f-flag-for tests-in-region)))))
+
 (defun go-check-current ()
   (interactive)
-  (go-check-compile (buffer-file-name) (go-check-f-flag-for (go-check-tests-in-region (point-min) (point-max)))))
+  (go-check-run-tests-in-region (point-min) (point-max)))
 
 (defun go-check-toggle-test-and-target ()
   (interactive)
@@ -58,11 +63,13 @@
 
 (defun go-check-single ()
   (interactive)
-  (save-excursion
+  (if mark-active
+      (go-check-run-tests-in-region (region-beginning) (region-end))
+    (save-excursion
     (go-beginning-of-defun)
     (if (looking-at "func .* \\(Test.*\\)(.*)")
         (go-check-compile (file-name-directory (buffer-file-name)) (go-check-f-flag-for (match-string 1)))
-      (message "No Test* found around point"))))
+      (message "No Test* found around point")))))
 
 (defun go-check-all ()
   (interactive)
