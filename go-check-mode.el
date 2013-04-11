@@ -48,7 +48,7 @@
     (save-excursion
       (goto-char region-start)
       (while (search-forward-regexp go-check-test-function-regexp region-end t)
-        (setq tests-in-region (cons (match-string 1) tests-in-region)))
+        (setq tests-in-region (cons (match-string-no-properties 1) tests-in-region)))
       (identity tests-in-region))))
 
 (defun go-check-run-tests-in-region (region-start region-end)
@@ -89,7 +89,7 @@
     (save-excursion
     (go-beginning-of-defun)
     (if (looking-at go-check-test-function-regexp)
-        (go-check-run-tests-for-regexps (match-string 1))
+        (go-check-run-tests-for-regexps (match-string-no-properties 1))
       (message "No Test* found around point")))))
 
 (defun go-check-ad-hoc (query)
@@ -129,10 +129,17 @@
 (defun go-check-runner-with-opts (&optional opts)
   "Create the command line string command to be
    run, adding opts to the call for go-check-runner"
-  (let ((opts (if (listp opts)
+  (let* ((opts (if (listp opts)
                  opts
-               (list opts))))
-    (concat go-check-runner " " (mapconcat 'identity opts " "))))
+               (list opts)))
+         (partial-runner-command (mapconcat 'identity opts " "))
+        (prefix (if (listp current-prefix-arg) (car current-prefix-arg) current-prefix-arg)))
+    (concat go-check-runner " " (cond
+     ((eq nil prefix) partial-runner-command)
+     ((= 1 prefix) (concat partial-runner-command " -gocheck.v"))
+     ((= 2 prefix) (concat partial-runner-command " -gocheck.vv"))
+     ((= 4 prefix) (read-from-minibuffer
+                    (format "Run %s like this: " go-check-runner) partial-runner-command))))))
 
 (defun go-check-compile (a-file-or-dir &optional opts)
   "Runs a compile for the specified file or directory with the specified opts"
