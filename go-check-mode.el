@@ -5,6 +5,7 @@
 (define-key go-check-mode-keymap (kbd "a") 'go-check-all)
 (define-key go-check-mode-keymap (kbd "t") 'go-check-toggle-test-and-target)
 (define-key go-check-mode-keymap (kbd "s") 'go-check-single)
+(define-key go-check-mode-keymap (kbd "e") 'go-check-ad-hoc)
 
 (define-prefix-command 'go-checkable-mode-keymap)
 (define-key go-checkable-mode-keymap (kbd "c") 'go-check-current)
@@ -32,6 +33,8 @@
   :lighter "" :keymap `((,go-check-key-command-prefix . go-checkable-mode-keymap)))
 
 (defun go-check-tests-in-region (region-start region-end)
+  "Return all test functions found between `region-start'
+   and `region-end'"
   (let ((tests-in-region nil))
     (save-excursion
       (goto-char region-start)
@@ -40,13 +43,22 @@
       (identity tests-in-region))))
 
 (defun go-check-run-tests-in-region (region-start region-end)
+  "Run all tests found between `region-start' and `region-end'"
   (let ((tests-in-region (go-check-tests-in-region region-start region-end)))
     (if (= 0 (length tests-in-region)) (message "No tests found in region/file")
-      (go-check-compile (buffer-file-name) (go-check-f-flag-for tests-in-region)))))
+      (go-check-run-tests-for-regexps tests-in-region))))
 
-(defun go-check-current ()
-  (interactive)
-  (go-check-run-tests-in-region (point-min) (point-max)))
+(defun go-check-f-flag-for (files)
+  (let ((files (if (listp files)
+                   files
+                 (list files))))
+    (concat "-gocheck.f " "'" (mapconcat 'identity files "|") "'")))
+
+(defun go-check-run-tests-for-regexps (query)
+  "Use -gocheck.f to run specs matching `query'. If
+   query is a list, concatenate them with a | to produce
+   a string of 'or' clauses"
+  (go-check-compile (buffer-file-name) (go-check-f-flag-for query)))
 
 (defun go-check-toggle-test-and-target ()
   (interactive)
@@ -55,23 +67,28 @@
                         (go-check-test-file-for (buffer-name)))))
     (go-check-jump-to-file other-file)))
 
-(defun go-check-f-flag-for (files)
-  (let ((files (if (listp files)
-                  files
-                (list files))))
-    (concat "-gocheck.f " "'" (mapconcat 'identity files "|") "'")))
+(defun go-check-current ()
+  (interactive)
+  (go-check-run-tests-in-region (point-min) (point-max)))
 
 (defun go-check-single ()
+  "Run the test nearest to point. If the mark is active,
+   run all tests found in region"
   (interactive)
   (if mark-active
       (go-check-run-tests-in-region (region-beginning) (region-end))
     (save-excursion
     (go-beginning-of-defun)
     (if (looking-at "func .* \\(Test.*\\)(.*)")
-        (go-check-compile (file-name-directory (buffer-file-name)) (go-check-f-flag-for (match-string 1)))
+        (go-check-run-tests-for-regexps (match-string 1))
       (message "No Test* found around point")))))
 
+(defun go-check-ad-hoc (query)
+  (interactive "sgocheck regexp: ")
+  (go-check-run-tests-for-regexps query))
+
 (defun go-check-all ()
+  "Run all tests in the current directory"
   (interactive)
   (go-check-compile (file-name-directory (buffer-file-name))))
 
@@ -97,6 +114,7 @@
         (find-file a-file-name)))))
 
 (defun go-check-buffer-is-test-p ()
+  "Check to see if the buffer is a go test buffer"
   (and (buffer-name) (string-match "_test\\.go$" (buffer-name))))
 
 (defun go-check-runner ()
@@ -104,6 +122,8 @@
   "go test")
 
 (defun go-check-runner-with-opts (&optional opts)
+  "Create the command line string command to be
+   run, adding opts to the call for go-check-runner"
   (let ((opts (if (listp opts)
                  opts
                (list opts))))
