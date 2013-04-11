@@ -23,6 +23,15 @@
   "The buffer name in which test results should be shown"
   :type 'string)
 
+(defcustom go-check-runner "go test"
+  "The command with which to run tests.
+   Must support gocheck flags"
+  :type 'string)
+
+(defcustom go-check-test-function-regexp "func .* \\(Test.*\\)(.*)"
+  "The regexp used to identify test functions"
+  :type 'string)
+
 ;;;###autoload
 (define-minor-mode go-check-mode
   "Minor mode for Go files using the gocheck testing framework"
@@ -38,7 +47,7 @@
   (let ((tests-in-region nil))
     (save-excursion
       (goto-char region-start)
-      (while (search-forward-regexp "func .* \\(Test.*\\)(.*)" region-end t)
+      (while (search-forward-regexp go-check-test-function-regexp region-end t)
         (setq tests-in-region (cons (match-string 1) tests-in-region)))
       (identity tests-in-region))))
 
@@ -79,7 +88,7 @@
       (go-check-run-tests-in-region (region-beginning) (region-end))
     (save-excursion
     (go-beginning-of-defun)
-    (if (looking-at "func .* \\(Test.*\\)(.*)")
+    (if (looking-at go-check-test-function-regexp)
         (go-check-run-tests-for-regexps (match-string 1))
       (message "No Test* found around point")))))
 
@@ -117,17 +126,13 @@
   "Check to see if the buffer is a go test buffer"
   (and (buffer-name) (string-match "_test\\.go$" (buffer-name))))
 
-(defun go-check-runner ()
-  "Returns the command with which to run the specs"
-  "go test")
-
 (defun go-check-runner-with-opts (&optional opts)
   "Create the command line string command to be
    run, adding opts to the call for go-check-runner"
   (let ((opts (if (listp opts)
                  opts
                (list opts))))
-    (concat (go-check-runner) " " (mapconcat 'identity opts " "))))
+    (concat go-check-runner " " (mapconcat 'identity opts " "))))
 
 (defun go-check-compile (a-file-or-dir &optional opts)
   "Runs a compile for the specified file or directory with the specified opts"
