@@ -141,17 +141,18 @@
      ((= 4 prefix) (read-from-minibuffer
                     (format "Run %s like this: " go-check-runner) partial-runner-command))))))
 
-(defun go-check-compile (a-file-or-dir &optional opts)
-  "Runs a compile for the specified file or directory with the specified opts"
+(defun go-check-compile-raw (directory command)
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "r") `(lambda () (interactive)
-                                (go-check-run-from-directory (file-name-directory ,a-file-or-dir)
-                                                             (go-check-compile ,a-file-or-dir (quote ,opts)))))
+                                 (go-check-compile-raw ,directory ,command)))
     (global-set-key go-check-key-command-prefix map))
-
-  (go-check-run-from-directory (file-name-directory a-file-or-dir)
+  (go-check-run-from-directory directory
                                (let ((compilation-scroll-output t))
-                                  (compile (go-check-runner-with-opts opts) 'go-check-compilation-mode))))
+                                 (compile command 'go-check-compilation-mode))))
+
+(defun go-check-compile (a-file-or-dir &optional opts)
+  "Runs a compile for the specified file or directory with the specified opts"
+  (go-check-compile-raw (file-name-directory a-file-or-dir) (go-check-runner-with-opts opts)))
 
 (defmacro go-check-run-from-directory (directory body-form)
   "Peform body-form from within the specified directory"
