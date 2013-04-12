@@ -12,6 +12,10 @@
 (define-key go-checkable-mode-keymap (kbd "a") 'go-check-all)
 (define-key go-checkable-mode-keymap (kbd "t") 'go-check-toggle-test-and-target)
 
+(make-face 'go-check-error-face)
+(set-face-attribute 'go-check-error-face nil
+                    :foreground "#FF0000")
+
 (defgroup go-check-mode nil
   "Go check minor mode." :group 'go-mode)
 
@@ -163,21 +167,28 @@
   '((compilation--ensure-parse)
     ("^OK: [0-9]+ passed"
      (0 compilation-info-face))
+    ("^\\(FAIL\\): .*:[0-9]+:"
+     (1 'go-check-error-face))
+    ("^\\(PASS\\): .*:[0-9]+:"
+     (1 compilation-info-face))
+    ("^\\(START\\): .*:[0-9]+:"
+     (1 compilation-message-face))
     ("^OOPS: \\([0-9]+ passed\\), [0-9]+ FAILED"
      (1 compilation-info-face))
-    ("^OOPS: [0-9]+ passed, \\([0-9]+ FAILED\\)"
-     (1 compilation-error-face))
+    ("^OOPS: \\([0-9]+ passed\\), \\([0-9]+ FAILED\\)"
+     (1 compilation-info-face)
+     (2 'go-check-error-face))
     ("Compilation exited \\(abnormally\\) with"
-     (1 compilation-error-face))
+     (1 'go-check-error-face))
     ("Compilation \\(finished\\) at"
      (1 compilation-info-face))))
 
 (define-derived-mode go-check-compilation-mode compilation-mode "Gocheck Compilation"
   "Compilation mode for Go check output."
   (set (make-local-variable 'compilation-error-regexp-alist)
-       (cons 'go-check compilation-error-regexp-alist))
+       '(go-check))
   (set (make-local-variable 'compilation-error-regexp-alist-alist)
-       (cons '(go-check "go-check +\\([0-9A-Za-z@_./\:-]+\\.rb\\):\\([0-9]+\\)" 1 2)
+       (cons '(go-check "\\([0-9A-Za-z@_./\:-]+\\.go\\):\\([0-9]+\\)" 1 2)
              compilation-error-regexp-alist-alist))
   (setq font-lock-defaults '(go-check-compilation-mode-font-lock-keywords t)))
 
