@@ -1,3 +1,25 @@
+;;; go-check-mode.el --- A minor mode for running go tests with gocheck <http://labix.org/gocheck>
+
+;; Copyright (C) 2013 Samuel Lopes
+
+;; Author: Samuel Lopes <samlopes89@gmail.com>
+;; Keywords: go testing
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;;; Code:
+
 (require 'go-mode)
 
 (define-prefix-command 'go-check-mode-keymap)
@@ -74,6 +96,7 @@
   (go-check-compile (buffer-file-name) (go-check-f-flag-for query)))
 
 (defun go-check-toggle-test-and-target ()
+  "Jump between test file and its target file"
   (interactive)
   (let ((other-file (if (go-check-buffer-is-test-p)
                           (go-check-target-file-for (buffer-name))
@@ -81,6 +104,7 @@
     (go-check-jump-to-file other-file)))
 
 (defun go-check-current ()
+  "Run all tests in the current file"
   (interactive)
   (go-check-run-tests-in-region (point-min) (point-max)))
 
