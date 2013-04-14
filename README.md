@@ -44,7 +44,7 @@ The keybindings made available by `go-check-mode` are listed below, assuming you
 Note that `go-check-mode` will make different keybindings available depending on what buffer is currently being visited (i.e. has focus):
 
 - __Within an _test.go file__: all commands are available
-- __Within a regular .go file__: only `go-check-rerun`, `go-check-all`, and `go-check-toggle` are available
+- __Within a regular .go file__: only `go-check-rerun`, `go-check-all`, `go-check-current`, and `go-check-toggle` are available
 - __Within any other file__: only `go-check-rerun` is available
 
 

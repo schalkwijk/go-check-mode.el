@@ -103,10 +103,26 @@
                         (go-check-test-file-for (buffer-name)))))
     (go-check-jump-to-file other-file)))
 
+(defun go-check-current-for-file (filename)
+  "Run all tests found within `filename'"
+  (let ((current-buffer (buffer-name)))
+    (save-excursion
+      (if (get-file-buffer filename)
+          (progn
+            (switch-to-buffer (get-file-buffer filename) t)
+            (go-check-run-tests-in-region (point-min) (point-max)))
+        (progn
+          (let ((temp-buffer (find-file-literally filename)))
+            (go-check-run-tests-in-region (point-min) (point-max))
+            (kill-buffer temp-buffer))))
+      (switch-to-buffer current-buffer))))
+
 (defun go-check-current ()
   "Run all tests in the current file"
   (interactive)
-  (go-check-run-tests-in-region (point-min) (point-max)))
+  (if (go-check-buffer-is-test-p)
+      (go-check-current-for-file (buffer-file-name))
+    (go-check-current-for-file (go-check-test-file-for (buffer-name)))))
 
 (defun go-check-single ()
   "Run the test nearest to point. If the mark is active,
